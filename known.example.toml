@@ -1,0 +1,138 @@
+# 固定錯誤 / 已知背景清單:複製成 known.toml 後修改(路徑由 config.toml 的 known_path 指定)。
+# 檔案改了會自動重新載入,不用重啟;格式錯誤時會記 log 並沿用上一版。
+#
+# ── 什麼時候加一筆 ──────────────────────────────────
+# 有人說「這個時間的這種錯誤一定是 XX 造成的,不用看」——例如主機固定重啟、廠商固定維護。
+# 每一筆描述「哪些時段」+「哪些告警」:
+#
+#   [[known]]
+#   id          = "英數短代號,不可重複"
+#   title       = "回覆裡顯示的名稱"
+#   description = "一兩句說明原因,會附在回覆與分析背景裡"
+#   source      = "誰、哪天說的(方便日後確認是否仍然成立)"
+#   action      = "known"     # known  = 符合就直接回覆「固定維護窗」,不送 LLM 分析
+#                             # context = 不改變分類,只放進分析背景讓 LLM 參考
+#   grace_minutes = 2         # 時段前後的容忍分鐘數(known 預設 2、context 預設 5)。
+#                             # 檢查間隔較長的排程(例如每 5 分鐘)可以加大,但要在註解寫理由。
+#   expires     = 2027-12-31  # 選填,過了這天就失效(台北日期)
+#   windows = [
+#     # 台北時間 HH:MM。end 早於 start 代表跨午夜(例如 23:50–00:10)。
+#     # days:"daily"(預設)、"weekdays"(週一到五)、"weekends",或 0–6 清單(0 = 週一),
+#     #       以時段「開始」那天為準。
+#     # label:選填,回覆會顯示成「開始時間 + label」,例如「03:00 62 號主機重啟」。
+#     { start = "03:00", end = "03:10", days = "daily", label = "62 號主機重啟" },
+#   ]
+#
+#   [known.match]
+#   systems     = ["cms"]     # 告警的起點 system;空 = 不限
+#   any_regex   = ["廠商甲", "DDSC"]  # 任一個符合即可(不分大小寫),比對告警訊息、標題與原文
+#   all_regex   = ["廠商甲|DDSC", "Errno 111|socket"]  # 每一個都要符合(AND);和 any_regex 同時寫時兩者都要成立
+#   check_codes = []          # 限定 watchdog check code
+#   task_pks    = []          # 限定 watchdog 排程編號(crontab_task_pk)
+#
+# action = "known" 一定要同時寫 systems 與 task_pks / check_codes 其中之一:
+# 只靠時段或只靠字樣,會把同一時間其他系統、其他排程的錯誤也當成已知。範圍說不清楚就用 "context"。
+# 「是哪個廠商」與「是連線失敗」是兩件事,known 請用 all_regex 讓兩個條件同時成立。
+# 同時符合多筆時,取時間最貼近、時段最短的那一段(主機各自的重啟時段優先於整晚的大時段)。
+# never_silence 的 check / 規則永遠優先,固定維護窗不會蓋掉金流等關鍵告警。
+
+[[known]]
+id = "ddsc-nightly-restart"
+title = "廠商甲主機輪流重啟"
+description = "每日凌晨 00:00–03:55 廠商甲主機輪流重啟,這段時間明確提到廠商甲/DDSC/電文(60x/70x)且是連線失敗(Errno 111、Connection refused、socket、連線被拒、timeout)的錯誤都是這個原因;各主機重啟時間:62 03:00、82 03:10、52 03:20、53 03:30、50 03:50、51 03:55。"
+source = "2026-10-21 使用者提供"
+action = "known"
+# 範圍:監控頻道裡會引述廠商甲呼叫 log 的兩支關鍵字排程 —— 35「檢查PE, pxy是否有CMS P999回傳」(alerts-cms,
+# source_system = cms)與 118「[SSO] 檢查是否有M999的異常回應」(alerts-sso,source_system = sso)。
+# 依據 watchdog_snapshot/tasks.json 的群組對應(廠商甲只有 pxy / fastpxy / pe / sso / cms
+# 呼叫);其他廠商甲相關排程(33、44、46…)不發到這兩個頻道。這是推測,新增頻道時要重新確認。
+# 排程每 5 分鐘檢查一次,04:05 的錯誤最晚 04:10 才發告警,所以容忍 5 分鐘。
+grace_minutes = 5
+windows = [
+  { start = "00:00", end = "03:55", label = "廠商甲主機輪流重啟期間" },
+  { start = "03:00", end = "03:10", label = "62 號主機重啟" },
+  { start = "03:10", end = "03:20", label = "82 號主機重啟" },
+  { start = "03:20", end = "03:30", label = "52 號主機重啟" },
+  { start = "03:30", end = "03:40", label = "53 號主機重啟" },
+  { start = "03:50", end = "03:55", label = "50 號主機重啟" },
+  { start = "03:55", end = "04:05", label = "51 號主機重啟" },
+]
+
+[known.match]
+systems = ["cms", "sso"]
+task_pks = [35, 118]
+all_regex = [
+  "廠商甲|DDSC|電文|(?<!\\d)[67]0[0-9](?!\\d)",
+  "Errno 111|Connection refused|socket|連線被拒|timed? ?out",
+]
+
+[[known]]
+id = "ddsc-nightly-context"
+title = "廠商甲主機輪流重啟(可能相關)"
+description = "每日凌晨 00:00–03:55 廠商甲主機輪流重啟,經管回傳 P999、提到廠商甲或連線異常的錯誤可能是這個原因,但訊息沒有同時指出廠商甲與連線失敗,請確認錯誤是否來自廠商甲電文再下結論;各主機重啟時間:62 03:00、82 03:10、52 03:20、53 03:30、50 03:50、51 03:55。"
+source = "2026-10-21 使用者提供"
+action = "context"
+windows = [
+  { start = "00:00", end = "03:55", label = "廠商甲主機輪流重啟期間" },
+  { start = "03:00", end = "03:10", label = "62 號主機重啟" },
+  { start = "03:10", end = "03:20", label = "82 號主機重啟" },
+  { start = "03:20", end = "03:30", label = "52 號主機重啟" },
+  { start = "03:30", end = "03:40", label = "53 號主機重啟" },
+  { start = "03:50", end = "03:55", label = "50 號主機重啟" },
+  { start = "03:55", end = "04:05", label = "51 號主機重啟" },
+]
+
+[known.match]
+any_regex = [
+  "廠商甲",
+  "DDSC",
+  "電文",
+  "\\bP999\\b",
+  "經管(錯誤|回傳)",
+  "Errno 111",
+  "Connection (refused|reset)",
+  "連線(失敗|被拒|逾時|中斷|異常)",
+]
+
+[[known]]
+id = "middle-platform-midnight-restart"
+title = "中台服務每日重啟"
+description = "每日 00:00–00:01 中台服務重啟,這時會有幾個電文連線失敗。"
+source = "2026-10-21 使用者提供"
+action = "known"
+# 範圍同廠商甲那筆(35 / 118):哪些排程會引述中台(middleware)呼叫的 log 沒有資料可查,是推測。
+# 只認「明確提到中台/middleware」且「連線失敗」的訊息;只有 P999 交給下面的 context。
+windows = [
+  { start = "00:00", end = "00:01", label = "中台服務重啟" },
+]
+
+[known.match]
+systems = ["cms", "sso"]
+task_pks = [35, 118]
+all_regex = [
+  "中台|middleware",
+  "Errno 111|Connection (refused|reset)|socket|連線(失敗|被拒|逾時|中斷|異常)|timed? ?out",
+]
+
+[[known]]
+id = "middle-platform-midnight-context"
+title = "中台服務每日重啟(可能相關)"
+description = "每日 00:00–00:01 中台服務重啟,這時的電文連線失敗或經管回傳 P999 可能是這個原因,但訊息沒有直接指出中台,請確認後再下結論。"
+source = "2026-10-21 使用者提供"
+action = "context"
+windows = [
+  { start = "00:00", end = "00:01", label = "中台服務重啟" },
+]
+
+[known.match]
+any_regex = [
+  "中台",
+  "middleware",
+  "電文",
+  "Errno 111",
+  "Connection (refused|reset)",
+  "socket",
+  "連線(失敗|被拒|逾時|中斷|異常)",
+  "\\bP999\\b",
+  "經管(錯誤|回傳)",
+]

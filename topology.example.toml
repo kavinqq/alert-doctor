@@ -1,0 +1,208 @@
+# 跨系統拓樸範本:複製成 topology.toml 後校對。
+# 每條邊的 source 是出處(檔案路徑[:行]);verified 空字串 = 未核對,此時 source 以「待確認」開頭。
+# verified 填「親自對 prod 驗過的日期」;範例檔裡標 2026-10-20 的是依 repo 設定檔的欄位名推得,仍請在正式環境核對。
+# 不放任何密碼、token、含帳密的連線字串。
+
+[meta]
+version = 1
+updated = "2026-10-20"
+
+[[edges]]
+from = "pxy"
+to = "sso"
+via = "HTTP verify_token(settings SSO_IP)"
+purpose = "驗證使用者 token、取 ino"
+source = "/Users/you/acme-tx-gateway/acme-tx-gateway/local_settings.py:22;/Users/you/.claude/projects/-Users-you-acme-web/memory/ref_shared_smartcache_topology.md"
+verified = "2026-10-20"
+
+[[edges]]
+from = "fastpxy"
+to = "sso"
+via = "HTTP verify_token(settings SSO_IP)"
+purpose = "驗證 token;搬到 FastPxy 的 API 要重做 token→ino"
+source = "/Users/you/acme-proxy/fast_pxy/settings_example.py:81;/Users/you/.claude/projects/-Users-you-acme-backend/memory/branching-and-pxy-placement.md"
+verified = "2026-10-20"
+
+[[edges]]
+from = "cms"
+to = "sso"
+via = "HTTP(settings SSO_IP / SSO_OA_IP)"
+purpose = "後台呼叫 SSO"
+source = "/Users/you/acme-backend/local_settings_example.py:119"
+verified = "2026-10-20"
+
+[[edges]]
+from = "oa"
+to = "sso"
+via = "HTTP(ApiService)"
+purpose = "新增使用者、確認是否舊戶、判斷開戶資格"
+source = "/Users/you/acme-oa/專案架構說明.md:255"
+verified = "2026-10-20"
+
+[[edges]]
+from = "pxy"
+to = "fastpxy"
+via = "nginx 依路徑前綴分流到 127.0.0.1:8048"
+purpose = "已搬到 FastPxy 的 API 由 FastPxy 服務,其餘仍走 Django Pxy"
+source = "/Users/you/.claude/projects/-Users-you-acme-backend/memory/branching-and-pxy-placement.md;/Users/you/.claude/projects/-Users-you-acme-proxy/memory/reference_elk_pxy_routing.md:10"
+verified = "2026-10-16"
+
+[[edges]]
+from = "pe"
+to = "pxy"
+via = "HTTP"
+purpose = "官網前端經 Pxy 取資料(官網→Pxy→CMS)"
+source = "/Users/you/.claude/projects/-Users-you-acme-backend/memory/branching-and-pxy-placement.md:18"
+verified = "2026-10-02"
+
+[[edges]]
+from = "pxy"
+to = "ddsc"
+via = "TCP socket(DDSC_SOCKET_IP / DDSC_SUB_SOCKET_IP,timeout 15s)"
+purpose = "廠商甲電文:202 分戶帳走 sub 節點(五台 pxy 共用、無備援),其餘走主節點"
+source = "/Users/you/acme-tx-gateway/acme-tx-gateway/local_settings.py:10;/Users/you/.claude/projects/-Users-you-acme-sso/memory/ddsc-164-timeout-1015-login-slow.md"
+verified = "2026-10-15"
+
+[[edges]]
+from = "pe"
+to = "ddsc"
+via = "TCP socket(log 格式與 Pxy 不同:socket 錯誤 timed out)"
+purpose = "官網後端打廠商甲電文,307 電文走主節點"
+source = "/Users/you/.claude/projects/-Users-you-acme-sso/memory/ddsc-164-timeout-1015-login-slow.md"
+verified = "2026-10-15"
+
+[[edges]]
+from = "fastpxy"
+to = "ddsc"
+via = "TCP socket(DDSC_SOCKET_IP / DDSC_SUB_SOCKET_IP)"
+purpose = "廠商甲電文(FastPxy 版)"
+source = "/Users/you/acme-proxy/fast_pxy/settings_example.py:47"
+verified = "2026-10-20"
+
+[[edges]]
+from = "cms"
+to = "ddsc"
+via = "TCP socket(DDSC_SOCKET_IP)+ HTTP DDSC_API_BASE_URL"
+purpose = "後台對廠商甲電文/API"
+source = "/Users/you/acme-backend/local_settings_example.py:126"
+verified = "2026-10-20"
+
+[[edges]]
+from = "sso"
+to = "ddsc"
+via = "TCP socket(DDSC_SOCKET_IP / DDSC_SUB_SOCKET_IP)"
+purpose = "SSO 對廠商甲電文"
+source = "/Users/you/acme-sso/local_settings_example.py:158"
+verified = "2026-10-20"
+
+[[edges]]
+from = "pxy"
+to = "cms"
+via = "HTTP(settings PKMS_IP)"
+purpose = "Pxy 呼叫 PKMS(acme-backend)"
+source = "待確認 | /Users/you/acme-tx-gateway/acme-tx-gateway/local_settings.py:50;PKMS 即 cms 後端這點未核對"
+verified = ""
+
+[[edges]]
+from = "fastpxy"
+to = "cms"
+via = "HTTP(settings PKMS_IP)"
+purpose = "FastPxy 呼叫 PKMS(acme-backend)"
+source = "待確認 | /Users/you/acme-proxy/fast_pxy/settings_example.py:20;PKMS 即 cms 後端這點未核對"
+verified = ""
+
+[[edges]]
+from = "pxy"
+to = "redis"
+via = "django_redis caches['verify_token'](198.51.100.99:6379 DB 7)"
+purpose = "SmartCache 共用池,與 SSO / FastPxy 共用,ttl 7200"
+source = "/Users/you/.claude/projects/-Users-you-acme-web/memory/ref_shared_smartcache_topology.md:9"
+verified = "記憶註記 prod 已驗證"
+
+[[edges]]
+from = "fastpxy"
+to = "redis"
+via = "SMARTCACHE_REDIS_HOST=198.51.100.99 DB 7"
+purpose = "自寫 make_django_cache_key 對齊 Django key,共用池"
+source = "/Users/you/.claude/projects/-Users-you-acme-web/memory/ref_shared_smartcache_topology.md:9"
+verified = "記憶註記 prod 已驗證"
+
+[[edges]]
+from = "sso"
+to = "redis"
+via = "django_redis caches['verify_token'](198.51.100.99:6379 DB 7;VIP .99、節點 .100/.101)"
+purpose = "登入時寫 token cache,ttl 21600+jitter;Redis 兩區共用、不隨 SSO 台數放大"
+source = "/Users/you/.claude/projects/-Users-you-acme-web/memory/ref_shared_smartcache_topology.md:9;/Users/you/.claude/projects/-Users-you-acme-sso/memory/sso-loadtest-single-to-fleet-extrapolation.md:23"
+verified = "記憶註記 prod 已驗證"
+
+[[edges]]
+from = "cms"
+to = "redis"
+via = "settings REDIS_HOST / PXY_COMMON_REDIS_HOST"
+purpose = "CMS 快取;是否同一個共用池未核對"
+source = "待確認 | /Users/you/acme-backend/local_settings_example.py:87"
+verified = ""
+
+[[edges]]
+from = "sso"
+to = "mysql"
+via = "Django DB HOST(.91→198.51.100.95、.92→.96、.93→.97、.94→.98)"
+purpose = "每台 SSO app 配一台專屬 DB 主機,不共用;本機 /var/lib/mysql 是誘餌"
+source = "/Users/you/.claude/projects/-Users-you-acme-sso/memory/sso-db-topology-95-98.md:11"
+verified = "2026-08-12"
+
+[[edges]]
+from = "sso"
+to = "es"
+via = "django_elasticsearch_dsl"
+purpose = "使用者資料讀 Redis→ES;ES 全機隊共用,暫時抖動曾觸發大量誤刪(0713)"
+source = "/Users/you/.claude/projects/-Users-you-acme-sso/memory/sso-mass-delete-es-burst-0713.md:12"
+verified = "2026-07-13"
+
+[[edges]]
+from = "fastpxy"
+to = "as400"
+via = "HTTP(settings AS400_ADAPTER_IP)"
+purpose = "經 AS400 adapter 取核心資料"
+source = "/Users/you/acme-proxy/fast_pxy/settings_example.py:25"
+verified = "2026-10-20"
+
+[[edges]]
+from = "cms"
+to = "cmoney"
+via = "HTTP(settings CM_AUTH_IP)"
+purpose = "CMoney 驗證/S2S"
+source = "/Users/you/acme-backend/local_settings_example.py:170"
+verified = "2026-10-20"
+
+[[edges]]
+from = "pxy"
+to = "cmoney"
+via = "HTTP(settings CM_AUTH_IP / CM_TW_IP)"
+purpose = "CMoney 驗證與資料"
+source = "/Users/you/acme-tx-gateway/acme-tx-gateway/local_settings.py:241"
+verified = "2026-10-20"
+
+[[edges]]
+from = "gw"
+to = "sso"
+via = "HTTP /bcgw/user/login/ 等"
+purpose = "BCGW 路徑由 SSO 服務;誰是呼叫端(gw 本身或 App 直連)未核對"
+source = "待確認 | /Users/you/.claude/projects/-Users-you-acme-sso/memory/sso-login-fleet-and-peak-elk-0920.md:11;/Users/you/.claude/projects/-Users-you-acme-sso/memory/bcgw-alive-log-only-on-81.md"
+verified = ""
+
+[[edges]]
+from = "app"
+to = "gw"
+via = "TCP 長連線(心跳 pt=6 約每 5 秒)"
+purpose = "App 連 BCGW;BCGW 六台主力,僅 203.0.113.81 寫心跳 log"
+source = "/Users/you/.claude/projects/-Users-you-acme-sso/memory/bcgw-alive-log-only-on-81.md:8"
+verified = "2026-09-11"
+
+[[edges]]
+from = "optional"
+to = "sso"
+via = "HTTP verify_token(記憶寫 198.51.100.89:8098)"
+purpose = "自選股登入驗證 token"
+source = "待確認 | /Users/you/.claude/projects/-Users-you-Documents----/memory/optional-app-login-footgun.md:11;衝突:/Users/you/.claude/projects/-Users-you-alert-doctor/memory/alert-doctor-design-decisions.md:39 指出正式 SSO 為 .92/.93/.94/.192,而 /Users/you/.claude/projects/-Users-you-acme-sso/memory/sso-login-fleet-and-peak-elk-0920.md:11 記 .94 是 SIT、承接登入的是 .92/.93/.192 與台中兩台"
+verified = ""

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.alert-doctor.analyzer</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/you/.pyenv/versions/3.11.4/bin/python3</string>
+        <string>-m</string>
+        <string>alert_doctor</string>
+        <string>analyzer</string>
+        <string>--config</string>
+        <string>/Users/you/alert-doctor/config.toml</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/you/alert-doctor</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/you/.local/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/you/alert-doctor/logs/analyzer.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/you/alert-doctor/logs/analyzer.log</string>
+</dict>
+</plist>

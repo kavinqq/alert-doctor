@@ -1,0 +1,210 @@
+# alert-doctor 設定範本:複製成 config.toml 後修改。
+# 相對路徑(db_path 等)以這個檔案所在目錄為基準。
+# 機密(Slack token、ELK 密碼)不放這裡,走 Keychain 或環境變數,見 README.md。
+
+# ── Slack ───────────────────────────────────────────
+# 工作區網址,用來組訊息 permalink(不含結尾斜線)。
+workspace_url = "https://example.slack.com"
+# 每日報表、健康告警與保護狀態通知(進出過載、🌪️ 告警風暴總覽)要貼的頻道 ID。
+# 留空 = 每日報表與健康告警不貼;保護狀態通知改貼到當下告警量最多的監控頻道。
+report_channel = ""
+# report_channel 留空時,日報/週報寫到這個目錄(相對路徑以 config.toml 所在目錄為準,同其他路徑設定)
+report_dir = "reports"
+# Keychain service 名稱;account 固定為 bot_token / app_token。
+keychain_service = "alert-doctor"
+
+# ── 路徑(v2)───────────────────────────────────────
+# 各 repo 的唯讀 checkout 放這裡;拓樸檔供跨系統根因分析使用。
+mirrors_dir = "mirrors"
+topology_path = "topology.toml"
+# 固定錯誤 / 已知維護窗清單(見 known.example.toml);檔案不存在 = 沒有任何已知背景。
+known_path = "known.toml"
+
+# ── 自動規則(v2)───────────────────────────────────
+# active 規則仍會以這個機率抽樣送分析,避免靜音後沒人複查。
+shadow_sample_rate = 0.1
+auto_rule_ttl_days = 7
+
+# ── ELK ─────────────────────────────────────────────
+elk_url = "http://10.0.0.100:9200"
+elk_user = "elastic"
+# 與 elk-logs skill 共用同一筆 Keychain 密碼。
+elk_keychain_service = "ops-elk"
+# 單次查詢逾時秒數。逾時視為「查不到」,不會被當成已恢復。
+elk_timeout = 10
+
+# ── LLM(claude -p)────────────────────────────────
+model = "sonnet"
+escalation_model = "opus"
+# 每日呼叫上限;超過就只回「額度用完」,不再分析。
+daily_limit = 80
+daily_limit_escalation = 15
+# 單次 claude -p 逾時秒數。
+llm_timeout = 600
+# 同細指紋在這個小時數內已有分析結果就直接沿用。
+verdict_reuse_hours = 24
+# 遮罩告警裡的身分證字號與手機(存檔、送 LLM、回覆前)。預設關閉:log 遮罩預計由 server 端統一處理。
+redact_pii = false
+
+# ── 分診 ────────────────────────────────────────────
+# 同指紋的上一則距今超過這個分鐘數,就開新 incident。
+idle_minutes = 60
+# 突增偵測的比較窗(分鐘)。
+spike_window_minutes = 15
+
+# ── 路徑 ────────────────────────────────────────────
+db_path = "data/alert_doctor.db"
+runs_dir = "runs"
+rules_path = "rules.toml"
+checks_path = "checks.toml"
+log_dir = "logs"
+
+# ── 回覆節奏與保護(v3)─────────────────────────────
+# 固定 tag 的人(每個 incident 的第一則都會 tag,後續更新不 tag):值班主管 A、B。
+# 只處理這些 bot 發的訊息(Rocket Message Bot);頻道裡的人或其他 bot 發言一律忽略。留空 = 全部處理。
+source_bot_ids = ["B01SRCBOT00"]
+default_owners = ["U01CCCCCCCC", "U01DDDDDDDD"]
+# 可以在 Slack 用「@alertdoctor 固定錯誤 / 取消固定」的人(只收 Slack user ID,U 開頭;email 與群組不算)。
+# 不寫 = 沿用 default_owners。要加自己:Slack 點自己的頭像 → 個人檔案 → ⋮ → 「複製成員 ID」,
+# 例如 known_editors = ["U01CCCCCCCC", "U01DDDDDDDD", "U你的ID"]。「查」不受限制。
+# known_editors = ["U01CCCCCCCC", "U01DDDDDDDD"]
+# 第一則是否立即發(不等 LLM,先給規則分類 + 訊號摘要)。
+first_reply_immediate = true
+# 更新節奏:前 update_early_window_minutes 分鐘每 update_every_minutes_early 分鐘一則,之後每 update_every_minutes_late 分鐘。
+update_every_minutes_early = 1
+update_early_window_minutes = 10
+update_every_minutes_late = 5
+# 預算(token bucket,每分鐘補滿):ELK、Slack 發文、新排 LLM。
+# reserved 是只給該等級使用的保留額度(CRITICAL / 首則),一般工作吃不到。
+budget_elk_per_min = 30
+budget_elk_reserved_critical = 10
+budget_slack_per_min = 20
+budget_slack_reserved_critical = 4
+budget_slack_reserved_first = 4
+budget_llm_per_min = 5
+# 過載模式:最近 1 分鐘進件或活躍 incident 達門檻就進入;連續 overload_exit_minutes 分鐘低於門檻 50% 才退出。
+overload_intake_per_min = 15
+overload_active_incidents = 10
+overload_exit_minutes = 5
+# 過載期間 tag 人的冷卻時間(分鐘):進入過載的通知已 tag default_owners,
+# 這段時間內非 CRITICAL 的新 incident 首則不再 tag,避免風暴中一直被 @。
+overload_untag_minutes = 30
+# 收到時間與告警時間差超過這個秒數視為補撈,不逐批補發。
+backfill_lag_seconds = 120
+# 太長的告警會被 Slack 切成好幾則(每則 4000 字);同一個 bot 在這個秒數內接著發、
+# 看起來不是告警開頭的訊息,會併回前一則一起分析,不各自回覆。開頭那則也會等這麼久收齊。
+fragment_join_seconds = 15
+
+# ── watchdog 快照與錯誤資料庫 ──────────────────────
+# 排程快照(tasks.json):告警的 crontab_task_pk 對應人看得懂的名稱、排程、負責群組。
+watchdog_snapshot_path = "watchdog_snapshot/tasks.json"
+# 錯誤資料庫(獨立於營運用的 alert_doctor.db),供彙整與 mr-sentinel 查詢,見 README.md。
+archive_db_path = "data/error_archive.db"
+# 同一個排程時刻的告警會在幾秒內成群到達;新 incident 首則等這麼多秒收齊同一波再發(CRITICAL 等不等)。
+batch_settle_seconds = 20
+# 同 incident 同頻道兩次更新的最小間隔(分鐘);量級翻倍、嚴重度升級、主機增加不受限。
+update_min_interval_minutes = 2
+# 分析時 LLM 唯讀查 ELK 用的 elk-logs CLI(`python -m alert_doctor elk-query` 會轉呼叫它)。
+elk_cli_path = "/Users/you/.claude/skills/elk-logs/scripts/elk.py"
+
+# ── 頻道 ────────────────────────────────────────────
+# id 是 Slack 頻道 ID(頻道詳細資料最下方可複製);systems 是該頻道告警的起點 system,
+# 第一個是預設 source_system。
+
+[[channels]]
+id = "C0CMSXXXX"
+name = "alerts-cms"
+systems = ["cms"]
+
+[[channels]]
+id = "C0PXYXXXX"
+name = "alerts-pxy"
+systems = ["pxy", "fastpxy"]
+
+[[channels]]
+id = "C0SSOXXXX"
+name = "alerts-sso"
+systems = ["sso"]
+
+[[channels]]
+id = "C0OAXXXXX"
+name = "alerts-onboarding"
+systems = ["oa"]
+
+# ── Systems ─────────────────────────────────────────
+# owners 每個項目可以是 Slack user ID(U…)、user group ID(S…)或 email(啟動時解析成 Slack 帳號);
+# 空陣列 = 不 @ 任何人。
+# error_query 可省略,預設為 project 等於 elk_project 且 log.levelname 為 ERROR。
+# elk_project 是 ELK 文件的 `project` 欄位值(目前看得到:tw、middleware、pe、cms、twcara、sso、pxy、sb、twcava);
+# 留空字串 = 還不知道,跨系統候選與 request_id 稽核會略過這個 system。
+
+[systems.cms]
+repos = ["acme-backend", "acme-frontend"]
+owners = []
+elk_project = "cms"
+
+[systems.pxy]
+repos = ["acme-tx-gateway"]
+owners = []
+elk_project = "pxy"
+
+[systems.fastpxy]
+repos = ["acme-proxy"]
+owners = []
+# project=middleware 是大中台的 Go 服務;FastPxy 的 log 用 log.type=FAST_PXY,沒有 level 欄位,錯誤看 5xx。
+elk_project = "FAST_PXY"
+error_query = '''{"bool":{"filter":[{"term":{"log.type":"FAST_PXY"}},{"range":{"log.extra.response_status":{"gte":500}}}]}}'''
+
+[systems.sso]
+repos = ["acme-sso"]
+owners = []
+elk_project = "sso"
+
+[systems.oa]
+repos = ["acme-oa", "acme-oa-frontend"]
+owners = []
+# onboarding的 log 不在 project 欄位,而是 log.project=OA(log.tags=BE_AP / BE_CMS),等級在 log.level。
+elk_project = "OA"
+error_query = '''{"bool":{"filter":[{"term":{"log.project":"OA"}},{"term":{"log.level":"ERROR"}}]}}'''
+
+# 官網(acme-web)。沒有自己的告警頻道,但根因常在這裡,分析時要能讀它的 code、查它的錯誤量。
+[systems.pe]
+repos = ["acme-web"]
+owners = []
+elk_project = "pe"
+
+# ── Repos ───────────────────────────────────────────
+# deploy_ref:正式環境對應的 ref,分析時以它的 SHA 為準。
+
+[repos.acme-backend]
+path = "/Users/you/acme-backend"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-frontend]
+path = "/Users/you/acme-frontend"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-tx-gateway]
+path = "/Users/you/acme-tx-gateway"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-proxy]
+path = "/Users/you/acme-proxy"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-sso]
+path = "/Users/you/acme-sso"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-oa]
+path = "/Users/you/acme-oa"
+# 遠端預設分支是 dev(開發用);正式版在 main。
+deploy_ref = "origin/main"
+
+[repos.acme-oa-frontend]
+path = "/Users/you/acme-oa-frontend"
+deploy_ref = "origin/HEAD"
+
+[repos.acme-web]
+path = "/Users/you/acme-web"
+deploy_ref = "origin/HEAD"

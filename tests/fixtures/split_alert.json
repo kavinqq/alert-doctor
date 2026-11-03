@@ -1,0 +1,72 @@
+{
+ "source": "alerts-sso 真實告警,Slack 以 4000 字切成 10 則、總長 40000 字被截斷;已匿名化並刪減每則中段的身分證清單,切點前後字元保留原樣",
+ "piece_lengths": [
+  4000,
+  4000,
+  4000,
+  4000,
+  4000,
+  4000,
+  4000,
+  4000,
+  4000,
+  4000
+ ],
+ "messages": [
+  {
+   "ts": "1789991599.405160",
+   "bot_id": "B0FIXTURE",
+   "text": "<@UAAAAAAAAAA> <@UBBBBBBBBBB> <@UCCCCCCCCCC> \n\n[check_log_message]檢查指定系統的log\n{'task_id': '00000000-0000-4000-8000-000000000000', 'code': 'MDlNB90WVnwW-YUfdtieV', 'vargs': [], 'vkwargs': {'crontab_task_label': '[SSO] 檢查是否有M999的異常回應', 'crontab_task_pk': 118, 'access': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'elk_host': '10.0.0.100', 'interval': 5, 'keywords': ['M999'], 'log_tags': ['SSO']}, 'check_script': '[check_log_message]檢查指定系統的log', 'result': {'level': 40, 'message': '[\\'SSO\\']服務中出現異常關鍵字「[\\'M999\\']」，請立即查看系統狀況！「{\\'remote_address\\': \\'198.51.100.253\\', \\'server_hostname\\': \\'prod-app-sb-193\\', \\'request_method\\': \\'POST\\', \\'request_path\\': \\'/bcgw/user/otp/send\\', \\'request_body\\': b\\'{\"bdate\":\"75443641\",\"ino\":\"A501567594\"}\\', \\'response_status\\': 200, \\'req_uuid\\': \\'rrrrrrrrrrrr\\', \\'code\\': \\'M999\\', \\'msg\\': \\'無法預期的錯誤 the JSON object must be str, bytes or bytearray, not Mock\\', \\'run_time\\': 0.09173011779785156}」'}}"
+  },
+  {
+   "ts": "1790000000.000000",
+   "bot_id": "B0FIXTURE",
+   "text": "<@UAAAAAAAAAA> <@UBBBBBBBBBB> <@UCCCCCCCCCC> \n\n[check_log_message]檢查指定系統的log\n{'task_id': '00000000-0000-4000-8000-000000000000', 'code': 'MDlNB90WVnwW-YUfdtieV', 'vargs': [], 'vkwargs': {'crontab_task_label': '[SSO] 檢查是否有M999的異常回應', 'crontab_task_pk': 118, 'access': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'elk_host': '10.0.0.100', 'interval': 5, 'keywords': ['M999'], 'log_tags': ['SSO']}, 'check_script': '[check_log_message]檢查指定系統的log', 'result': {'level': 40, 'message': '[\\'SSO\\']服務中出現異常關鍵字「[\\'M999\\']」，請立即查看系統狀況！「{\\'remote_address\\': \\'198.51.100.253\\', \\'server_hostname\\': \\'prod-app-oa-91\\', \\'request_method\\': \\'POST\\', \\'request_path\\': \\'/user/pkms/get_credit_data/\\', \\'request_body\\': b\\'{\"ino_list\": [\"A187459558\", \"A915681053\", \"A103193503\", \"A957640553\", \"A242359914\", \"A"
+  },
+  {
+   "ts": "1790000000.018770",
+   "bot_id": "B0FIXTURE",
+   "text": "159662006\", \"A702361156\", \"A131953993\", \"A606846165\", \"A181856284\", \"A102062631\""
+  },
+  {
+   "ts": "1790000000.036560",
+   "bot_id": "B0FIXTURE",
+   "text": ", \"A986430338\", \"A473248705\", \"A142811767\", \"A328663705\", \"A678070330\", \"A860694"
+  },
+  {
+   "ts": "1790000000.052130",
+   "bot_id": "B0FIXTURE",
+   "text": "377\", \"A202037301\", \"A112187567\", \"A989311128\", \"A467758796\", \"A59"
+  },
+  {
+   "ts": "1790000000.067470",
+   "bot_id": "B0FIXTURE",
+   "text": "6852561\", \"A114539102\", \"A921892493\", \"A387185786\", \"A849734494\", \"A135062062\", "
+  },
+  {
+   "ts": "1790000000.081240",
+   "bot_id": "B0FIXTURE",
+   "text": "\"A121358824\", \"A692851877\", \"A286401638\", \"A164576025\", \"A141719975\", \"A46082141"
+  },
+  {
+   "ts": "1790000000.094700",
+   "bot_id": "B0FIXTURE",
+   "text": "3\", \"A462901277\", \"A414318462\", \"A921566844\", \"A794854900\", \"A5919"
+  },
+  {
+   "ts": "1790000000.107880",
+   "bot_id": "B0FIXTURE",
+   "text": "21320\", \"A142998263\", \"A120421938\", \"A120256429\", \"A760634114\", \"A"
+  },
+  {
+   "ts": "1790000000.122990",
+   "bot_id": "B0FIXTURE",
+   "text": "114098834\", \"A408556393\", \"A107440449\", \"A142841755\", \"A132853149\", \"A536423663\""
+  },
+  {
+   "ts": "1790000000.137180",
+   "bot_id": "B0FIXTURE",
+   "text": ", \"A380277796\", \"A770169223\", \"A667351094\", \"A817820836\", \"A130481029\", \"A141211"
+  }
+ ]
+}

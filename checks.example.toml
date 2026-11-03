@@ -1,0 +1,22 @@
+# key 可以是 check code 或 check title(先比 code 再比 title)。
+# elk.query 是 JSON 字串,{{from}} / {{to}} 由系統替換成視窗起迄(ISO +08:00),{{vars.KEY}} 取自 vkwargs。
+# system 必須是 config.toml [systems.<key>] 的 key(決定 source_system 與預設 owners)。
+# owners 寫了就優先於 system 的 owners;格式同 config.toml(U… / S… / email)。
+# signal:"rate"(HTTP 類,錯誤數 / elk.total_query 的總數)或 "count"(錯誤絕對量 + 持續分鐘 + 主機數)。
+# min_errors:量級升級(ACCUMULATED)的絕對下限,低於它永遠不算累積異常。
+
+[checks."fastpxy_5xx"]
+system = "fastpxy"
+never_silence = false
+owners = ["U01AAAAAAAA"]
+repo = "/Users/you/acme-proxy"
+deploy_ref = "origin/main"
+signal = "rate"
+min_errors = 5
+
+[checks."fastpxy_5xx".elk]
+index = "logs-generic-default"
+host_field = "log.extra.server_ip"
+lookback_minutes = 15
+query = '''{"bool":{"filter":[{"term":{"log.extra.logger_name":"fast_pxy.log_middleware"}},{"range":{"log.extra.response_status":{"gte":500}}},{"range":{"@timestamp":{"gte":"{{from}}","lte":"{{to}}"}}}]}}'''
+total_query = '''{"bool":{"filter":[{"term":{"log.extra.logger_name":"fast_pxy.log_middleware"}},{"range":{"@timestamp":{"gte":"{{from}}","lte":"{{to}}"}}}]}}'''

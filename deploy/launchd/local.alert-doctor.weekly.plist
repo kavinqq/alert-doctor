@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.alert-doctor.weekly</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/you/.pyenv/versions/3.11.4/bin/python3</string>
+        <string>-m</string>
+        <string>alert_doctor</string>
+        <string>report</string>
+        <string>--weekly</string>
+        <string>--post</string>
+        <string>--config</string>
+        <string>/Users/you/alert-doctor/config.toml</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/you/alert-doctor</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/you/.local/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/you/alert-doctor/logs/weekly.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/you/alert-doctor/logs/weekly.log</string>
+</dict>
+</plist>

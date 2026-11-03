@@ -1,0 +1,36 @@
+# 依檔案順序比對,第一條命中且未過期者生效。match_* 為 regex(re.search),未寫 = 不限。
+# action: datasource | noise | known | never_silence。expires 含當日(YYYY-MM-DD,台北時間)。
+# 這裡是人工規則。自動規則(shadow → active)由 tuner 依分析結果與 🔇 產生,存在資料庫,不寫進這個檔;
+# never_silence 永遠優先於自動規則,量級升級(📈 累積異常)也一律不會被任何規則靜音。
+
+# datasource:watchdog 自己查 ELK 失敗。回覆「ELK 查詢失敗 + 原因」,不送分析、不進基線與自動規則。
+# 放最前面:這類告警根本沒看到系統,不論標題是什麼都先講清楚是資料源問題。
+[[rules]]
+id = "elk-query-failed"
+action = "datasource"
+match_message = "ES連線出現異常|Elasticsearch.*(timed out|ConnectionError|Connection refused)"
+note = "watchdog 查詢 ELK 失敗"
+
+# never_silence 放在 datasource 之後、其他規則之前,避免被後面的 noise 規則先吃掉。
+[[rules]]
+id = "money-path-never-silence"
+action = "never_silence"
+match_title = "下單|交易|登入|憑證"
+note = "資金/登入路徑,永不靜音"
+
+[[rules]]
+id = "transient-timeout"
+action = "noise"
+match_message = "(?i)timed? ?out|Read timed out|Connection reset"
+require_transient = true
+max_count = 20
+note = "短暫 timeout,已自行恢復"
+
+[[rules]]
+id = "known-fastpxy-502"
+action = "known"
+match_code = "fastpxy_5xx"
+match_message = "502"
+note = "上游閘道偶發 502,已開卡追蹤"
+link = "https://taiga.example.internal/project/xxx/issue/0000"
+expires = 2026-12-31
