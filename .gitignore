@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+config.toml
+rules.toml
+checks.toml
+topology.toml
+known.toml
+data/
+logs/
+mirrors/
+runs/
+reports/
+watchdog_snapshot/
+evals/cases/
+evals/runs/
